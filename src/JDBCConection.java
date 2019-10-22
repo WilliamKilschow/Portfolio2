@@ -9,25 +9,24 @@ class JDBCConnection {
          Dette objekt skaber en connection til vores URL*/
         return DriverManager.getConnection(url);
     }
-    /*
-    *  INNER JOIN af STATIONS ON Departures, så vi kan tilgå navnet på en given station, i stedet for
-    * kun at have et StationID
-    * */
 
+
+    //Departures.TrainID As TrainID from Departures// Fra tidligere version
     public PreparedStatement selectpreparedstatement(Connection conn)
             throws SQLException {
-        String query = "select Departures.DepTime As DepTime, Departures.TrainID As TrainID from Departures" +
-                " INNER JOIN STATIONS  ON STATIONS.StationID = Departures.StationID" +
-                " Where StationName = ? ";
+        String query = "select Departures.DepTime As DepTime, Trains.Route as Route from Trains, Departures" +
+                " INNER JOIN STATIONS  ON STATIONS.StationID = Departures.StationID"+
+                " Where StationName = ? AND StationName = ?  ";
         PreparedStatement selectpstmt = null;
         selectpstmt = conn.prepareStatement(query);
         return selectpstmt;
     }
 
-    public ResultSet plainstatement(String DepTime,Connection conn)
+    public ResultSet plainstatement(String StationName,Connection conn)
         throws SQLException {
-        String query = "select Departures.DepTime As DepTime, Departures.TrainID As TrainID from Departures" +
-                " Where Departures.StationID ";
+        String query = "select Departures.DepTime As DepTime, Trains.Route as Route from Trains, Departures" +
+                " INNER JOIN STATIONS  ON STATIONS.StationID = Departures.StationID"+
+                " Where StationName = '" + StationName + "'";
         Statement stmt = null;
         ResultSet res = null;
         stmt = conn.createStatement();
@@ -41,9 +40,9 @@ class JDBCConnection {
         if(res==null)
             System.out.println("No records");
         while(res !=null & res.next()) {
-            String foundTrain = res.getString("TrainID");
+            String foundRoute = res.getString("Route");
             String foundDepartureTime = res.getString("DepTime");
-            System.out.println(foundTrain + " " + foundDepartureTime);
+            System.out.println(foundRoute + " " + foundDepartureTime);
         }
         }
 
@@ -61,16 +60,18 @@ class JDBCConnection {
             System.out.println("At which station do you wish to depart?");
             Scanner scanner = new Scanner(System.in);
             String station1 = scanner.nextLine();
+            System.out.println("Choose destination: ");
+            String station2 = scanner.nextLine();
             //Vi laver et preparedstatement kaldet feedback, som kører vores selectpreparedstatement på vores JDBC objekt.
             PreparedStatement Feedback = retriever.selectpreparedstatement(conn);
             Feedback.setString(1, station1);
+            Feedback.setString(2, station2);
             //Resultatet er vores preparedstatement som henter vores eksekverede query
             ResultSet pres = Feedback.executeQuery();
             //Vores JDBC objekt præsenterer den indsamlede data
             retriever.PresentRoute(pres);
-
-          //  ResultSet res = retriever.plainstatement(, conn);
-            // retriever.PresentRoute(res);
+            ResultSet res = retriever.plainstatement(station1, conn);
+            retriever.PresentRoute(res);
 
         /*Hvis der opstår en fejl med forbindelsen til
          databasen bliver stacktrace printet, så fejlen kan findes*/
